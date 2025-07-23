@@ -4,6 +4,7 @@ package com.learnpr1.journalApp.service;
 import com.learnpr1.journalApp.entity.JournalEntry;
 import com.learnpr1.journalApp.entity.User;
 import com.learnpr1.journalApp.repositary.UserRepo;
+import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -19,15 +20,25 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Logger;
+
 
 @Service
+
 @Component
+
+@Slf4j
 public class UserService {
 
     @Autowired
     private UserRepo userRepo;
 
     private static final PasswordEncoder passwordencoder=new BCryptPasswordEncoder();
+// Insted of it we can use @Slf4j annotation to log
+    // messages, but for that we need to add lombok dependency in pom.xml
+    // and also add @Slf4j annotation on top of the class
+    // @Slf4j
+//    private static final Logger logger = Logger.getLogger(UserService.class.getName());
 
     //Saves user
     public void saveuser(User user){
@@ -69,6 +80,11 @@ public class UserService {
             saveuserEncripted(user);
             return new ResponseEntity<>(user,HttpStatus.CREATED);
         } catch (Exception e) {
+            log.trace("Info error");
+            log.debug("Debug error");
+            log.info("Info error");
+            log.warn("Warn error");
+            log.error("Error occurred while creating user: {}", e.getMessage());
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
     }
@@ -127,6 +143,8 @@ public class UserService {
 
 
     }
+
+
 
 
 

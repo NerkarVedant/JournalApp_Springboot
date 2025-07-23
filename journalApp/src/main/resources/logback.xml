@@ -1,0 +1,36 @@
+<configuration>
+    <appender name="myConsole" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-10level %logger{36} - %msg%n</pattern>
+        </encoder>
+
+    </appender>
+<!--    to append everything in one file, you can use the FileAppender-->
+<!--    <appender name="myFile" class="ch.qos.logback.core.FileAppender">-->
+
+    <!-- To use RollingFileAppender, which allows log rotation, means new log files will be created for/after specific conditions are met -->
+    <appender name="myFile" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>C:\Users\HP\Documents\TP\JournalAppLogs\logfile.txt</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <maxFileSize>10MB</maxFileSize>
+
+            <!-- Specify the file name pattern for rolling files -->
+            <fileNamePattern>C:/Users/HP/Documents/TP/JournalAppLogs/journalApp-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <!-- Specify how many days to keep the logs -->
+            <maxHistory>30</maxHistory>
+
+        </rollingPolicy>
+
+<!--        // Specify the file path relative to the project root-->
+<!--        <file>logs/journalApp.log</file>-->
+
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-10level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="myConsole" />
+        <appender-ref ref="myFile" />
+    </root>
+</configuration>

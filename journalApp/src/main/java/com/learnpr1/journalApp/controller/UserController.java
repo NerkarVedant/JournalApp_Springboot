@@ -1,17 +1,12 @@
 package com.learnpr1.journalApp.controller;
 
 
-import com.learnpr1.journalApp.entity.JournalEntry;
 import com.learnpr1.journalApp.entity.User;
 import com.learnpr1.journalApp.service.UserService;
-import org.bson.types.ObjectId;
+import com.learnpr1.journalApp.service.ExternalApiService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/user")
@@ -19,6 +14,9 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private ExternalApiService externalApiService;
 
 
 
@@ -36,6 +34,10 @@ public class UserController {
         return userService.deleteUserByUsername();
     }
 
+    @GetMapping()
+    public ResponseEntity<?> showTemperature(){
+        return externalApiService.temperature();
+    }
 
 
 

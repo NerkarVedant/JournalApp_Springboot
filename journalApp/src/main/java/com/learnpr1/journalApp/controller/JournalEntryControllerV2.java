@@ -2,6 +2,7 @@ package com.learnpr1.journalApp.controller;
 
 
 import  com.learnpr1.journalApp.entity.JournalEntry;
+import com.learnpr1.journalApp.service.ExternalApiService;
 import com.learnpr1.journalApp.service.JournalEntryService;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,11 +22,19 @@ public class JournalEntryControllerV2 {
     @Autowired      //--injecting-- an instance of the interface
     private JournalEntryService journalEntryService;
 
+    @Autowired
+    private ExternalApiService externalApiService;
+
 
     //Display all the entries
     @GetMapping()            //localhost:8080/journal --GET--
     public ResponseEntity<?> getAllJournalEntriesOfUser(){
         return journalEntryService.getAllJournalEntries();
+    }
+
+    @GetMapping("audio")
+    public ResponseEntity<byte[]> getTheAudioFile(){
+        return externalApiService.generateSpeechFile();
     }
 
 
