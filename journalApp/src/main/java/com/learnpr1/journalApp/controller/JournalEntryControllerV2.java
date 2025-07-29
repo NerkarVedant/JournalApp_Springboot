@@ -32,10 +32,6 @@ public class JournalEntryControllerV2 {
         return journalEntryService.getAllJournalEntries();
     }
 
-    @GetMapping("audio")
-    public ResponseEntity<byte[]> getTheAudioFile(){
-        return externalApiService.generateSpeechFile();
-    }
 
 
     //Creates new entries

@@ -17,6 +17,7 @@ public class PublicController {
     @GetMapping("/health-check")  //mapping it with it, whenever we go to this url
     // the control will come to this place
     public String healthcheck(){
+
         return "health-Check";
     }
 

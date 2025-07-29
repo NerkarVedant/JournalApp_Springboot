@@ -33,6 +33,9 @@ public class JournalEntryService {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private ExternalApiService externalApiService;
+
     @Transactional
     public ResponseEntity<JournalEntry> saveJournalEntry(JournalEntry journalEntry){
         try {
@@ -40,8 +43,13 @@ public class JournalEntryService {
             String username = authentication.getName();
             User user=userService.findByUserName(username);
             journalEntry.setDate(LocalDateTime.now());
+
+            byte[] audiobyte=externalApiService.generateSpeechFile(journalEntry);
+            journalEntry.setAudioFile(audiobyte);
+
             JournalEntry saved=journalEntryRepo.save(journalEntry);
             user.getJournalEntryList().add(saved);
+
             //here if we write
             //user.setUsername(null);
             //it will give an error means the entry will be added to our database of the journalEntries,
