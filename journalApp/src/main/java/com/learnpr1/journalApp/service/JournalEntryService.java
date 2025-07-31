@@ -81,6 +81,7 @@ public class JournalEntryService {
 
 
     public Optional<JournalEntry> findObjectById(ObjectId id){
+
         return journalEntryRepo.findById(id);
     }
 
@@ -140,6 +141,8 @@ public class JournalEntryService {
         if (oldEntry != null){
             oldEntry.setTitle(updatedEntry.getTitle() != null && !updatedEntry.getTitle().isEmpty() ?updatedEntry.getTitle(): oldEntry.getTitle());
             oldEntry.setContent(updatedEntry.getContent() !=null && !updatedEntry.getContent().isEmpty() ? updatedEntry.getContent(): oldEntry.getContent());
+            byte[] audiobyte=externalApiService.generateSpeechFile(oldEntry);
+            oldEntry.setAudioFile(audiobyte);
             journalEntryRepo.save(oldEntry);
             return new ResponseEntity<>(oldEntry.toString(), HttpStatus.OK);
         }

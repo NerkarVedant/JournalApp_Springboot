@@ -59,11 +59,35 @@
 			<version>3.5.0</version>
 		</dependency>
 
-<!--		<dependency>-->
-<!--			<groupId>com.mashape.unirest</groupId>-->
-<!--			<artifactId>unirest-java</artifactId>-->
-<!--			<version>1.4.9</version>-->
-<!--		</dependency>-->
+		<dependency>
+			<groupId>com.mashape.unirest</groupId>
+			<artifactId>unirest-java</artifactId>
+			<version>1.4.9</version>
+		</dependency>
+
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-api</artifactId>
+			<version>0.12.6</version>
+		</dependency>
+
+<!--		jackson is the default JSON library for Spring Boot 3.x, but if you want to use JJWT with Jackson, you need to include the following dependencies:-->
+
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-jackson</artifactId>
+			<version>0.12.6</version>
+			<scope>runtime</scope>
+		</dependency>
+
+		<!--we want its implementation to be runtime only-->
+
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-impl</artifactId>
+			<version>0.12.6</version>
+			<scope>runtime</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
