@@ -1,0 +1,67 @@
+<div class="signup-container">
+    <h2>Create an Account</h2>
+    <form (ngSubmit)="onSubmit()" #signupForm="ngForm">
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input 
+                type="text" 
+                id="username" 
+                name="username" 
+                [(ngModel)]="user.username" 
+                required 
+                #username="ngModel"
+                class="form-control">
+            <div *ngIf="username.invalid && (username.dirty || username.touched)" class="error-message">
+                Username is required
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input 
+                type="password" 
+                id="password" 
+                name="password" 
+                [(ngModel)]="user.password" 
+                required 
+                minlength="3"
+                #password="ngModel"
+                class="form-control">
+            <div *ngIf="password.invalid && (password.dirty || password.touched)" class="error-message">
+                <div *ngIf="password.errors?.['required']">Password is required</div>
+                <div *ngIf="password.errors?.['minlength']">Password must be at least 3 characters long</div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="confirmPassword">Confirm Password</label>
+            <input 
+                type="password" 
+                id="confirmPassword" 
+                name="confirmPassword" 
+                [(ngModel)]="user.confirmPassword" 
+                required
+                #confirmPassword="ngModel"
+                class="form-control">
+            <div *ngIf="confirmPassword.dirty && user.password !== user.confirmPassword" class="error-message">
+                Passwords do not match
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" [disabled]="!signupForm.valid || user.password !== user.confirmPassword" class="btn-signup">Sign Up</button>
+        </div>
+        
+        <div class="login-link">
+            Already have an account? <a [routerLink]="['/sign-in']">Log in</a>
+        </div>
+        
+        <div class="login-button-container">
+            <button type="button" class="btn-login" (click)="goToLogin()">Go to Login</button>
+        </div>
+        
+        <div *ngIf="errorMessage" class="error-alert">
+            {{ errorMessage }}
+        </div>
+    </form>
+</div>

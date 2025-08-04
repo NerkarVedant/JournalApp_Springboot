@@ -43,17 +43,15 @@ public class ExternalApiService {
 
     @Value("${weather.api.key}")
     private String weatherApiKey; // Injected from application.properties
-    private static final String API_URL="http://api.weatherstack.com/current?access_key=API_key&query=City_name";
+    private String baseUrl="http://api.weatherstack.com/current";
 
     public ExternalApiService() throws IOException {
     }
 
     public WeatherResponse getWeather(String cityName) {
-        String finalAPI = API_URL.replace("API_key", weatherApiKey)
-                                 .replace("City_name", cityName);
+        String finalAPI = baseUrl + "?access_key=" + weatherApiKey + "&query=" + cityName;
         ResponseEntity<WeatherResponse> response = restTemplate.exchange(finalAPI, HttpMethod.GET, null, WeatherResponse.class);
-        WeatherResponse body = response.getBody();
-        return body;
+        return response.getBody();
 
     }
 

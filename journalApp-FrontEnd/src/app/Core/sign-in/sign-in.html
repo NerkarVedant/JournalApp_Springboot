@@ -1,0 +1,55 @@
+<div class="signin-container">
+    <h2>Sign In</h2>
+    <form (ngSubmit)="onSubmit()" #signinForm="ngForm">
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input 
+                type="text" 
+                id="username" 
+                name="username" 
+                [(ngModel)]="loginCredentials.username" 
+                required 
+                #username="ngModel"
+                class="form-control">
+            <div *ngIf="username.invalid && (username.dirty || username.touched)" class="error-message">
+                Username is required
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input 
+                type="password" 
+                id="password" 
+                name="password" 
+                [(ngModel)]="loginCredentials.password" 
+                required 
+                #password="ngModel"
+                class="form-control">
+            <div *ngIf="password.invalid && (password.dirty || password.touched)" class="error-message">
+                Password is required
+            </div>
+        </div>
+        
+        <div class="remember-me">
+            <input type="checkbox" id="rememberMe" name="rememberMe" [(ngModel)]="rememberMe">
+            <label for="rememberMe">Remember me</label>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" [disabled]="!signinForm.valid" class="btn-signin">Sign In</button>
+        </div>
+        
+        <div class="signup-link">
+            Don't have an account? <a (click)="goToSignUp()" style="cursor: pointer;">Create one</a>
+        </div>
+        
+        <div class="forgot-password">
+            <a href="#">Forgot password?</a>
+        </div>
+        
+        <div *ngIf="errorMessage" class="error-alert">
+            {{ errorMessage }}
+        </div>
+    </form>
+</div>
