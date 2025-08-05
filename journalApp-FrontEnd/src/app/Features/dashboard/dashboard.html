@@ -1,4 +1,10 @@
 <div class="dashboard-container">
+  <!-- Header with Logout -->
+  <div class="dashboard-header">
+    <h1>Journal Dashboard</h1>
+    <button class="logout-button" (click)="logout()">Logout</button>
+  </div>
+
   <!-- Loading Spinner -->
   <div class="loading-spinner" *ngIf="isLoading">
     <div class="spinner"></div>
@@ -10,6 +16,12 @@
     <p>{{ errorMessage }}</p>
     <button class="retry-button" (click)="loadDashboardData()">Try Again</button>
   </div>
+  
+  <!-- Notification Message -->
+  <div *ngIf="notification" 
+       [ngClass]="{'notification': true, 'notification-success': notification.isSuccess, 'notification-error': !notification.isSuccess}">
+    <p>{{ notification.message }}</p>
+  </div>
 
   <!-- Main Dashboard Content -->
   <div class="dashboard-content" *ngIf="!isLoading && !errorMessage">
@@ -17,7 +29,7 @@
     <div class="journal-section">
       <div class="journal-header">
         <h2>My Journal Entries</h2>
-        <button class="new-entry-button">+ New Entry</button>
+        <button class="new-entry-button" (click)="navigateToNewEntry()">+ New Entry</button>
       </div>
       
       <div class="journal-entries-list" *ngIf="journalEntries && journalEntries.length > 0">
@@ -34,21 +46,21 @@
           
           <div class="entry-audio" *ngIf="entry.audioFile">
             <audio controls>
-              <source [src]="entry.audioFile" type="audio/mpeg">
+              <source [src]="getAudioUrl(entry.objectId)" type="audio/mpeg">
               Your browser does not support the audio element.
             </audio>
           </div>
           
           <div class="entry-actions">
             <button class="edit-button">Edit</button>
-            <button class="delete-button">Delete</button>
+            <button class="delete-button" (click)="safeDeleteEntry(entry)">Delete</button>
           </div>
         </div>
       </div>
       
       <div class="no-entries-message" *ngIf="!journalEntries || journalEntries.length === 0">
         <p>You don't have any journal entries yet. Create your first entry to get started!</p>
-        <button class="new-entry-button">Create First Entry</button>
+        <button class="new-entry-button" (click)="navigateToNewEntry()">Create First Entry</button>
       </div>
     </div>
   </div>

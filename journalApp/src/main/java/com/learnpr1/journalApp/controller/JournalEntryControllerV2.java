@@ -4,6 +4,7 @@ package com.learnpr1.journalApp.controller;
 import  com.learnpr1.journalApp.entity.JournalEntry;
 import com.learnpr1.journalApp.service.ExternalApiService;
 import com.learnpr1.journalApp.service.JournalEntryService;
+import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 
+@Slf4j
 @RestController
 @RequestMapping("/journal")     //adds mapping on the whole class
 public class JournalEntryControllerV2 {
@@ -50,8 +52,15 @@ public class JournalEntryControllerV2 {
 
 
     //Deletes entry by id
-    @DeleteMapping("id/{myId}")
+    @DeleteMapping ("id/{myId}")
     public ResponseEntity<String> deleteEntryById(@PathVariable ObjectId myId){
+        log.info("Deleting journal entry with ID: {}", myId);
+        if (myId == null) {
+            return new ResponseEntity<>("ID cannot be null", HttpStatus.BAD_REQUEST);
+        }
+        // Call the service method to delete the entry by ID
+        // Assuming deleteObjectById returns a ResponseEntity
+        // Adjust the service method to accept ObjectId if necessary
         return journalEntryService.deleteObjectById(myId);
     }
 

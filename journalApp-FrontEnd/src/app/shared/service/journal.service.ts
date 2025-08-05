@@ -1,7 +1,7 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, of, throwError } from 'rxjs';
+import { map, catchError, tap } from 'rxjs/operators';
 
 export interface JournalEntry {
   objectId: string;
@@ -58,9 +58,36 @@ export class JournalService {
   }
 
   // Delete a journal entry
-  deleteJournalEntry(entryId: string): Observable<any> {
+  deleteJournalEntry(id: string): Observable<any> {
+    console.log('deleteJournalEntry called with ID:', id);
+
+    // Safety check
+    if (!id) {
+      console.error('Null or undefined ID passed to deleteJournalEntry');
+      return throwError(() => new Error('No ID provided for deletion'));
+    }
+    
+    // Ensure we have a clean string ID without quotes, braces, etc.
+    const cleanId = String(id).replace(/['"{}]/g, '');
+    console.log('Cleaned ID for API call:', cleanId);
+    
     const headers = this.getAuthHeaders();
-    return this.http.delete(`${this.baseUrl}/journal/${entryId}`, { headers });
+    const deleteUrl = `${this.baseUrl}/journal/id/${cleanId}`;
+    
+    console.log('DELETE request URL:', deleteUrl);
+    
+    // Use DELETE to match the @DeleteMapping on the backend
+    // Set responseType to 'text' since the backend returns a string response
+    return this.http.delete(deleteUrl, {
+      headers,
+      responseType: 'text'
+    }).pipe(
+      tap(response => console.log('Delete successful, response:', response)),
+      catchError(error => {
+        console.error('Delete request failed:', error);
+        return throwError(() => error);
+      })
+    );
   }
 
   // Get dashboard data (journal entries only)
@@ -81,5 +108,10 @@ export class JournalService {
         'Authorization': `Bearer ${localStorage.getItem(this.tokenKey)}`
       })
     });
+  }
+  
+  // Helper method to get base URL
+  getBaseUrl(): string {
+    return this.baseUrl;
   }
 }

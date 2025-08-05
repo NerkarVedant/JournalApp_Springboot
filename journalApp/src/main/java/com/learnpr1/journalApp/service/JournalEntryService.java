@@ -2,6 +2,7 @@ package com.learnpr1.journalApp.service;
 
 
 import com.learnpr1.journalApp.entity.JournalEntry;
+import com.learnpr1.journalApp.entity.JournalEntryDTO;
 import com.learnpr1.journalApp.entity.User;
 import com.learnpr1.journalApp.repositary.JournalEntryRepo;
 import org.bson.types.ObjectId;
@@ -68,8 +69,8 @@ public class JournalEntryService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
         User user=userService.findByUserName(username);
-        List<JournalEntry> all =user.getJournalEntryList();
-        if(all != null && !all.isEmpty()){
+        List<JournalEntryDTO> all =user.getJournalEntryList().stream().map(JournalEntryDTO::new).collect(Collectors.toList());
+        if(!all.isEmpty()){
             return new ResponseEntity<>(all, HttpStatus.OK);
         }
         else{

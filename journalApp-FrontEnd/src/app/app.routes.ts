@@ -16,6 +16,12 @@ export const routes: Routes = [
     canActivate: [authGuard],
     title: 'Journal Dashboard'
   },
+  {
+    path: 'journal-entry',
+    loadComponent: () => import('./Features/journal-entry/journal-entry').then(m => m.JournalEntry),
+    canActivate: [authGuard],
+    title: 'New Journal Entry'
+  },
   
   // Public routes - accessible without authentication
   // Will redirect to dashboard if user is already logged in

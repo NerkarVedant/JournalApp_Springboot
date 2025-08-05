@@ -1,0 +1,52 @@
+<div class="journal-entry-container">
+  <div class="header">
+    <h1>New Journal Entry</h1>
+    <button class="back-button" (click)="goBack()">← Back to Dashboard</button>
+  </div>
+
+  <div class="form-container">
+    <form (ngSubmit)="saveJournalEntry()" #entryForm="ngForm">
+      <div class="form-group">
+        <label for="title">Title</label>
+        <input 
+          type="text" 
+          id="title" 
+          name="title" 
+          [(ngModel)]="journalEntry.title" 
+          required
+          placeholder="Enter a title for your journal entry"
+          class="form-control"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="content">Content</label>
+        <textarea 
+          id="content" 
+          name="content" 
+          [(ngModel)]="journalEntry.content" 
+          required
+          rows="10" 
+          placeholder="Write your journal entry here..."
+          class="form-control"
+        ></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button 
+          type="submit" 
+          class="save-button" 
+          [disabled]="!entryForm.form.valid || isSubmitting"
+        >
+          <span *ngIf="!isSubmitting">Save Entry</span>
+          <span *ngIf="isSubmitting">Saving...</span>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div *ngIf="notification" class="notification" [ngClass]="{'success': notification.isSuccess, 'error': !notification.isSuccess}">
+    <span>{{ notification.message }}</span>
+    <button class="close-notification" (click)="notification = null">×</button>
+  </div>
+</div>
