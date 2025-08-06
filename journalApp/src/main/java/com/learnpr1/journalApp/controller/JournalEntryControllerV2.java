@@ -2,6 +2,7 @@ package com.learnpr1.journalApp.controller;
 
 
 import  com.learnpr1.journalApp.entity.JournalEntry;
+import com.learnpr1.journalApp.entity.JournalEntryDTO;
 import com.learnpr1.journalApp.service.ExternalApiService;
 import com.learnpr1.journalApp.service.JournalEntryService;
 import lombok.extern.slf4j.Slf4j;
@@ -46,7 +47,7 @@ public class JournalEntryControllerV2 {
 
     // Gets entry by id
     @GetMapping("id/{myId}")
-    public ResponseEntity<JournalEntry> getJournalEntryById(@PathVariable ObjectId myId){
+    public ResponseEntity<?> getJournalEntryById(@PathVariable ObjectId myId){
         return journalEntryService.getJournalEntryByID(myId);
     }
 

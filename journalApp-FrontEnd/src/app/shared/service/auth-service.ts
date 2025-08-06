@@ -46,15 +46,15 @@ export class AuthService {
         password
       }, { headers, responseType: 'text' }).subscribe({
         next: (response: any) => {
-          console.log('Auth service: Login response received');
-          console.log('Response type:', typeof response);
+          console.log('[AuthService] Login response received');
+          console.log('[AuthService] Response type:', typeof response);
           
           let token = null;
           
           // Handle direct string token response (which seems to be your case)
           if (typeof response === 'string' && response.length > 20) {
             token = response.trim();
-            console.log('Token extracted directly from string response');
+            console.log('[AuthService] Token extracted directly from string response');
           }
           
           // As a fallback, try to parse as JSON if it looks like JSON
@@ -63,31 +63,49 @@ export class AuthService {
               const jsonResponse = JSON.parse(response);
               if (jsonResponse.token) {
                 token = jsonResponse.token;
-                console.log('Token extracted from parsed JSON string');
+                console.log('[AuthService] Token extracted from parsed JSON "token" field');
               } else if (jsonResponse.accessToken) {
                 token = jsonResponse.accessToken;
-                console.log('Token extracted from parsed JSON accessToken');
+                console.log('[AuthService] Token extracted from parsed JSON "accessToken" field');
               } else if (jsonResponse.jwtToken) {
                 token = jsonResponse.jwtToken;
-                console.log('Token extracted from parsed JSON jwtToken');
+                console.log('[AuthService] Token extracted from parsed JSON "jwtToken" field');
               }
             } catch (e) {
-              console.error('Error parsing response as JSON:', e);
+              console.error('[AuthService] Error parsing response as JSON:', e);
             }
           }
           
           if (token) {
-            // Store the token
+            // Store the token using our consistent key
+            console.log(`[AuthService] Storing token with key "${this.tokenKey}"`);
             this.setAuthToken(token);
+            
+            // Also store credentials for automatic token refresh
+            if (isPlatformBrowser(this.platformId)) {
+              try {
+                // Check if TokenService is available via injector
+                const tokenService = (window as any).tokenService;
+                if (tokenService) {
+                  console.log('[AuthService] Storing credentials in TokenService for automatic refresh');
+                  tokenService.storeCredentials(username, password);
+                  // Ensure TokenService has the token (it will use its own consistent key)
+                  tokenService.setToken(token);
+                }
+              } catch (e) {
+                console.error('[AuthService] Could not access TokenService for credential storage:', e);
+              }
+            }
+            
             observer.next({ success: true });
             observer.complete();
           } else {
-            console.error('No token found in response');
+            console.error('[AuthService] No token found in response');
             observer.error({ error: 'No token found in response' });
           }
         },
         error: (error) => {
-          console.error('Auth service: Login error', error);
+          console.error('[AuthService] Login error:', error);
           observer.error(error);
         }
       });
@@ -106,9 +124,32 @@ export class AuthService {
 
   logout(): void {
     if (isPlatformBrowser(this.platformId)) {
+      console.log('[AuthService] Logging out user and clearing tokens');
+      
+      // Clear primary token key
       localStorage.removeItem(this.tokenKey);
+      
+      // Also clear any legacy token keys that might exist
+      localStorage.removeItem('jwtToken');
+      localStorage.removeItem('token');
+      localStorage.removeItem('accessToken');
+      
+      // Clear other user data
       localStorage.removeItem(this.userKey);
       localStorage.removeItem('rememberMe');
+      
+      // Clean any timers and credentials in TokenService
+      try {
+        const tokenService = (window as any).tokenService;
+        if (tokenService) {
+          console.log('[AuthService] Clearing TokenService credentials on logout');
+          tokenService.clearCredentials();
+        }
+      } catch (e) {
+        console.error('[AuthService] Could not access TokenService for credential clearing:', e);
+      }
+      
+      console.log('[AuthService] User logged out successfully');
     }
   }
 

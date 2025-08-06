@@ -27,12 +27,14 @@
   <div class="dashboard-content" *ngIf="!isLoading && !errorMessage">
     <!-- Journal Entries -->
     <div class="journal-section">
+      <!-- Header with New Entry button if entries exist -->
       <div class="journal-header">
         <h2>My Journal Entries</h2>
-        <button class="new-entry-button" (click)="navigateToNewEntry()">+ New Entry</button>
+        <button class="new-entry-button" *ngIf="hasEntries" (click)="navigateToNewEntry()">+ New Entry</button>
       </div>
       
-      <div class="journal-entries-list" *ngIf="journalEntries && journalEntries.length > 0">
+      <!-- Journal Entries List - shown only when entries exist -->
+      <div class="journal-entries-list" *ngIf="hasEntries">
         <div class="journal-entry-card" *ngFor="let entry of journalEntries">
           <div class="entry-header">
             <h3 class="entry-title">{{ entry.title }}</h3>
@@ -46,21 +48,22 @@
           
           <div class="entry-audio" *ngIf="entry.audioFile">
             <audio controls>
-              <source [src]="getAudioUrl(entry.objectId)" type="audio/mpeg">
+              <source [src]="getAudioUrl(getEntryId(entry))" type="audio/mpeg">
               Your browser does not support the audio element.
             </audio>
           </div>
           
           <div class="entry-actions">
-            <button class="edit-button">Edit</button>
+            <button class="edit-button" (click)="navigateToEditEntry(entry)">Edit</button>
             <button class="delete-button" (click)="safeDeleteEntry(entry)">Delete</button>
           </div>
         </div>
       </div>
       
-      <div class="no-entries-message" *ngIf="!journalEntries || journalEntries.length === 0">
+      <!-- No Entries Message - shown when no entries exist -->
+      <div class="no-entries-message" *ngIf="!hasEntries">
         <p>You don't have any journal entries yet. Create your first entry to get started!</p>
-        <button class="new-entry-button" (click)="navigateToNewEntry()">Create First Entry</button>
+        <button class="create-first-entry-button" (click)="navigateToNewEntry()">Create First Entry</button>
       </div>
     </div>
   </div>

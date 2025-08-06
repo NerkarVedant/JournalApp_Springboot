@@ -1,6 +1,6 @@
 <div class="journal-entry-container">
   <div class="header">
-    <h1>New Journal Entry</h1>
+    <h1>{{ isEditMode ? 'Edit Journal Entry' : 'New Journal Entry' }}</h1>
     <button class="back-button" (click)="goBack()">← Back to Dashboard</button>
   </div>
 
@@ -38,8 +38,10 @@
           class="save-button" 
           [disabled]="!entryForm.form.valid || isSubmitting"
         >
-          <span *ngIf="!isSubmitting">Save Entry</span>
-          <span *ngIf="isSubmitting">Saving...</span>
+          <span *ngIf="!isSubmitting && !isEditMode">Save Entry</span>
+          <span *ngIf="!isSubmitting && isEditMode">Confirm Edit</span>
+          <span *ngIf="isSubmitting && !isEditMode">Saving...</span>
+          <span *ngIf="isSubmitting && isEditMode">Updating...</span>
         </button>
       </div>
     </form>

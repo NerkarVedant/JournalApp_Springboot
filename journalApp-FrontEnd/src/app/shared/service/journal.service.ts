@@ -4,7 +4,8 @@ import { Observable, of, throwError } from 'rxjs';
 import { map, catchError, tap } from 'rxjs/operators';
 
 export interface JournalEntry {
-  objectId: string;
+  id: string;           // Changed from objectId to id to match backend DTO
+  objectId?: string;    // Keep objectId as optional for backward compatibility
   date: string;
   title: string;
   content: string;
@@ -42,7 +43,7 @@ export class JournalService {
   // Get single journal entry by ID
   getJournalEntryById(entryId: string): Observable<JournalEntry> {
     const headers = this.getAuthHeaders();
-    return this.http.get<JournalEntry>(`${this.baseUrl}/journal/${entryId}`, { headers });
+    return this.http.get<JournalEntry>(`${this.baseUrl}/journal/id/${entryId}`, { headers });
   }
 
   // Create a new journal entry
@@ -52,9 +53,46 @@ export class JournalService {
   }
 
   // Update an existing journal entry
-  updateJournalEntry(entry: JournalEntry): Observable<JournalEntry> {
+  updateJournalEntry(entryId: string, entry: JournalEntry): Observable<any> {
     const headers = this.getAuthHeaders();
-    return this.http.put<JournalEntry>(`${this.baseUrl}/journal/${entry.objectId}`, entry, { headers });
+    // Remove the id from the entry object before sending to avoid conflicts
+    const { id, ...entryWithoutId } = entry;
+    
+    // Use responseType: 'text' for endpoints that might return non-JSON responses
+    return this.http.put(`${this.baseUrl}/journal/id/${entryId}`, entryWithoutId, { 
+      headers, 
+      responseType: 'text' 
+    }).pipe(
+      map(response => {
+        // If the response is empty or just a success message, return a standardized object
+        if (!response || typeof response === 'string') {
+          // Create a new object with entry properties and additional success info
+          const result = {
+            ...entry,  // Include the original entry data
+            success: true, 
+            message: response || 'Update successful'
+          };
+          return result;
+        }
+        // If it's somehow already parsed JSON (shouldn't happen with responseType: 'text')
+        return response;
+      }),
+      catchError(error => {
+        console.error('Error in updateJournalEntry:', error);
+        // If error status is 200, it's actually a success but with formatting issues
+        if (error.status === 200) {
+          console.log('Received 200 status code but treated as error, converting to success');
+          // Create a new object with entry properties and additional success info
+          const result = {
+            ...entry,
+            success: true, 
+            message: 'Update successful despite response format issues'
+          };
+          return of(result);
+        }
+        return throwError(() => error);
+      })
+    );
   }
 
   // Delete a journal entry

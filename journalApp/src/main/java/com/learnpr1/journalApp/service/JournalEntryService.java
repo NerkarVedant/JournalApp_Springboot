@@ -74,7 +74,7 @@ public class JournalEntryService {
             return new ResponseEntity<>(all, HttpStatus.OK);
         }
         else{
-            return new ResponseEntity<>("There are no entries",HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(HttpStatus.OK);
         }
 
 
@@ -88,16 +88,16 @@ public class JournalEntryService {
 
 
 
-    public ResponseEntity<JournalEntry>getJournalEntryByID(ObjectId id){
+    public ResponseEntity<?>getJournalEntryByID(ObjectId id){
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
         User user = userService.findByUserName(username);
         Optional<JournalEntry> journalEntryList=user.getJournalEntryList().stream().filter(x -> x.getId().equals(id)).findFirst();
         if(journalEntryList.isPresent()) {
-            Optional<JournalEntry> journalEntry = findObjectById(id);
-            if (journalEntry.isPresent()) {
-                return new ResponseEntity<>(journalEntry.get(), HttpStatus.OK);
-            }
+            JournalEntryDTO journalEntry = new JournalEntryDTO(journalEntryList.get());
+            // Convert JournalEntry to JournalEntryDTO
+            return new ResponseEntity<>(journalEntry, HttpStatus.OK);
+
         }
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
@@ -145,7 +145,7 @@ public class JournalEntryService {
             byte[] audiobyte=externalApiService.generateSpeechFile(oldEntry);
             oldEntry.setAudioFile(audiobyte);
             journalEntryRepo.save(oldEntry);
-            return new ResponseEntity<>(oldEntry.toString(), HttpStatus.OK);
+            return new ResponseEntity<>("Entry updated successfully", HttpStatus.OK);
         }
         else {
             return new ResponseEntity<>("There was not such Entry",HttpStatus.NOT_FOUND);

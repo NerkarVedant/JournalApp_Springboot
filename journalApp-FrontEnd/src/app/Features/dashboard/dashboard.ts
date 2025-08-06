@@ -21,6 +21,7 @@ export class Dashboard implements OnInit, OnDestroy {
   errorMessage: string = '';
   audioUrls: Map<string, SafeUrl> = new Map<string, SafeUrl>();
   notification: { message: string, isSuccess: boolean } | null = null;
+  hasEntries: boolean = false;
 
   constructor(
     private journalService: JournalService, 
@@ -39,6 +40,7 @@ export class Dashboard implements OnInit, OnDestroy {
     this.isLoading = true;
     this.errorMessage = '';
     this.notification = null;
+    this.hasEntries = false; // Reset hasEntries flag before loading
     
     // Clean up existing audio URLs before loading new data to prevent memory leaks
     this.cleanupAudioUrls();
@@ -55,9 +57,19 @@ export class Dashboard implements OnInit, OnDestroy {
           this.journalEntries = data.journalEntries;
           console.log('Dashboard data loaded successfully:', this.journalEntries);
           
+          // Set hasEntries flag based on whether there are journal entries
+          this.hasEntries = this.journalEntries && this.journalEntries.length > 0;
+          console.log('Has entries:', this.hasEntries);
+          
           // Debug: Check the first entry's structure and ID
           if (this.journalEntries.length > 0) {
             const sample = this.journalEntries[0];
+            console.log('Sample entry structure:', sample);
+            console.log('Available ID fields:', {
+              id: sample.id,
+              objectId: sample.objectId,
+              _id: (sample as any)._id
+            });
           }
           
           // Process audio files
@@ -70,6 +82,9 @@ export class Dashboard implements OnInit, OnDestroy {
         error: (error) => {
           console.error('Error fetching dashboard data:', error);
           this.errorMessage = 'Failed to load dashboard data. Please try again later.';
+          
+          // Reset entries flag on error
+          this.hasEntries = false;
           
           if (error.status === 401 || error.status === 403) {
             this.errorMessage = 'Your session has expired. Please login again.';
@@ -106,24 +121,55 @@ export class Dashboard implements OnInit, OnDestroy {
     if (!entry.audioFile) return;
     
     try {
+      // Extract a valid ID for this entry
+      let entryId: string = '';
+      
+      // Try different ID fields that might be available
+      // Prioritize 'id' since that's what the backend DTO sends
+      if (entry.id) {
+        entryId = String(entry.id);
+      } else if (entry.objectId) {
+        entryId = String(entry.objectId);
+      } else if ((entry as any)._id) {
+        entryId = String((entry as any)._id);
+      } else {
+        // If no ID is found, create a unique ID based on entry content and date
+        const contentHash = entry.title + entry.content + entry.date;
+        entryId = btoa(contentHash).replace(/[^a-zA-Z0-9]/g, '').substring(0, 12);
+        console.warn(`No ID found for entry, using generated ID: ${entryId}`);
+      }
+      
       // Add entry ID to log for debugging
-      console.log(`Creating audio URL for entry ID: ${entry.objectId}`);
+      console.log(`Creating audio URL for entry ID: ${entryId}`);
+      console.log(`Entry title: ${entry.title}`);
       console.log(`Audio file data type: ${typeof entry.audioFile}`);
+      console.log(`Audio file data length/size:`, 
+        Array.isArray(entry.audioFile) ? entry.audioFile.length : 
+        typeof entry.audioFile === 'string' ? entry.audioFile.length :
+        entry.audioFile instanceof ArrayBuffer ? entry.audioFile.byteLength :
+        'unknown'
+      );
       
       // Create a unique key for this entry's audio
-      const audioKey = `audio-${entry.objectId}`;
+      const audioKey = `audio-${entryId}`;
+      
+      // Check if we already have a URL for this entry
+      if (this.audioUrls.has(audioKey)) {
+        console.log(`Audio URL already exists for entry ${entryId}, skipping creation`);
+        return;
+      }
       
       // Check if it's already a URL
       if (typeof entry.audioFile === 'string') {
         if (entry.audioFile.startsWith('http') || entry.audioFile.startsWith('blob:')) {
-          console.log(`Setting URL type audio for entry ${entry.objectId}`);
+          console.log(`Setting URL type audio for entry ${entryId}`);
           this.audioUrls.set(audioKey, this.sanitizer.bypassSecurityTrustUrl(entry.audioFile));
           return;
         }
         
         // If it's a base64 data URL
         if (entry.audioFile.startsWith('data:audio')) {
-          console.log(`Setting base64 audio for entry ${entry.objectId}`);
+          console.log(`Setting base64 audio for entry ${entryId}`);
           this.audioUrls.set(audioKey, this.sanitizer.bypassSecurityTrustUrl(entry.audioFile));
           return;
         }
@@ -131,13 +177,24 @@ export class Dashboard implements OnInit, OnDestroy {
       
       // If it's binary data (convert to base64 first if needed)
       const base64Data = this.ensureBase64Format(entry.audioFile);
+      
+      if (!base64Data) {
+        console.error(`No valid base64 data extracted for entry ${entryId}`);
+        return;
+      }
+      
+      console.log(`Base64 data length for entry ${entryId}: ${base64Data.length}`);
+      console.log(`Base64 data preview for entry ${entryId}: ${base64Data.substring(0, 50)}...`);
+      
       const blob = this.base64toBlob(base64Data, 'audio/mpeg');
       const url = URL.createObjectURL(blob);
       
-      console.log(`Created blob URL for entry ${entry.objectId}: ${url}`);
+      console.log(`Created blob URL for entry ${entryId}: ${url}`);
+      console.log(`Blob size for entry ${entryId}: ${blob.size} bytes`);
+      
       this.audioUrls.set(audioKey, this.sanitizer.bypassSecurityTrustUrl(url));
     } catch (e) {
-      console.error(`Error creating audio URL for entry ${entry.objectId}:`, e);
+      console.error(`Error creating audio URL for entry:`, e);
     }
   }
   
@@ -167,11 +224,50 @@ export class Dashboard implements OnInit, OnDestroy {
       return this.arrayBufferToBase64(buffer);
     }
     
-    // If it's an object with binary data
-    if (typeof data === 'object') {
-      // Try to get a sensible string representation
+    // If it's an array of numbers (byte array from Spring Boot)
+    if (Array.isArray(data)) {
+      console.log('Converting array of bytes to base64');
       try {
-        return JSON.stringify(data);
+        // Convert array of bytes to Uint8Array, then to base64
+        const uint8Array = new Uint8Array(data);
+        return this.arrayBufferToBase64(uint8Array.buffer);
+      } catch (e) {
+        console.error('Error converting byte array:', e);
+        return '';
+      }
+    }
+    
+    // If it's an object with binary data (like MongoDB binary format)
+    if (typeof data === 'object') {
+      // Check if it's a MongoDB Binary object format
+      if (data.type === 'Buffer' && Array.isArray(data.data)) {
+        console.log('Converting Buffer object to base64');
+        try {
+          const uint8Array = new Uint8Array(data.data);
+          return this.arrayBufferToBase64(uint8Array.buffer);
+        } catch (e) {
+          console.error('Error converting Buffer object:', e);
+          return '';
+        }
+      }
+      
+      // Check if it has a 'data' property with byte array
+      if (data.data && Array.isArray(data.data)) {
+        console.log('Converting data property array to base64');
+        try {
+          const uint8Array = new Uint8Array(data.data);
+          return this.arrayBufferToBase64(uint8Array.buffer);
+        } catch (e) {
+          console.error('Error converting data array:', e);
+          return '';
+        }
+      }
+      
+      // Try to get a sensible string representation as fallback
+      try {
+        const jsonString = JSON.stringify(data);
+        console.warn('Converting object to JSON string as fallback:', jsonString.substring(0, 100) + '...');
+        return jsonString;
       } catch (e) {
         console.error('Cannot convert object to string:', e);
         return '';
@@ -202,40 +298,84 @@ export class Dashboard implements OnInit, OnDestroy {
   private base64toBlob(base64Data: string, contentType: string): Blob {
     contentType = contentType || '';
     
+    if (!base64Data) {
+      console.error('Empty base64 data provided to base64toBlob');
+      return new Blob([], { type: contentType });
+    }
+    
     // Ensure we have clean base64 without data URL prefix
     if (base64Data.includes('base64,')) {
       base64Data = base64Data.split('base64,')[1];
     }
     
-    const sliceSize = 1024;
-    const byteCharacters = atob(base64Data);
-    const bytesLength = byteCharacters.length;
-    const slicesCount = Math.ceil(bytesLength / sliceSize);
-    const byteArrays = new Array(slicesCount);
-
-    for (let sliceIndex = 0; sliceIndex < slicesCount; ++sliceIndex) {
-      const begin = sliceIndex * sliceSize;
-      const end = Math.min(begin + sliceSize, bytesLength);
-
-      const bytes = new Array(end - begin);
-      for (let offset = begin, i = 0; offset < end; ++i, ++offset) {
-        bytes[i] = byteCharacters.charCodeAt(offset);
-      }
-      byteArrays[sliceIndex] = new Uint8Array(bytes);
-    }
+    // Remove any whitespace or newlines
+    base64Data = base64Data.replace(/\s/g, '');
     
-    return new Blob(byteArrays, { type: contentType });
+    try {
+      const sliceSize = 1024;
+      const byteCharacters = atob(base64Data);
+      const bytesLength = byteCharacters.length;
+      const slicesCount = Math.ceil(bytesLength / sliceSize);
+      const byteArrays = new Array(slicesCount);
+
+      for (let sliceIndex = 0; sliceIndex < slicesCount; ++sliceIndex) {
+        const begin = sliceIndex * sliceSize;
+        const end = Math.min(begin + sliceSize, bytesLength);
+
+        const bytes = new Array(end - begin);
+        for (let offset = begin, i = 0; offset < end; ++i, ++offset) {
+          bytes[i] = byteCharacters.charCodeAt(offset);
+        }
+        byteArrays[sliceIndex] = new Uint8Array(bytes);
+      }
+      
+      const blob = new Blob(byteArrays, { type: contentType });
+      console.log(`Created blob with size: ${blob.size} bytes, type: ${contentType}`);
+      return blob;
+    } catch (error) {
+      console.error('Error converting base64 to blob:', error);
+      console.error('Base64 data length:', base64Data.length);
+      console.error('Base64 data preview:', base64Data.substring(0, 100));
+      return new Blob([], { type: contentType });
+    }
   }
   
   /**
    * Gets the safe URL for an audio file
    */
   getAudioUrl(entryId: string): SafeUrl {
+    // If the entryId is undefined or empty, try to find it from the current entries
+    if (!entryId || entryId === 'undefined') {
+      console.warn('getAudioUrl called with undefined entryId, returning empty URL');
+      return '';
+    }
+    
     const audioKey = `audio-${entryId}`;
     const url = this.audioUrls.get(audioKey);
     
     console.log(`Getting audio URL for entry ${entryId}, found: ${url ? 'yes' : 'no'}`);
     return url || '';
+  }
+  
+  /**
+   * Helper method to extract ID from a journal entry
+   */
+  getEntryId(entry: any): string {
+    if (!entry) return '';
+    
+    // Try different ID fields that might be available
+    // Prioritize 'id' since that's what the backend DTO sends
+    if (entry.id) {
+      return String(entry.id);
+    } else if (entry.objectId) {
+      return String(entry.objectId);
+    } else if (entry._id) {
+      return String(entry._id);
+    } else {
+      // If no ID is found, create a unique ID based on entry content and date
+      const contentHash = entry.title + entry.content + entry.date;
+      return btoa(contentHash).replace(/[^a-zA-Z0-9]/g, '').substring(0, 12);
+    }
   }
 
   /**
@@ -282,42 +422,17 @@ export class Dashboard implements OnInit, OnDestroy {
       return;
     }
     
-    // Extract the objectId and title
+    // Extract the objectId and title using our helper method
     let objectId: string = '';
     let entryTitle: string = 'this journal entry';
     
     try {
-      // Debug log to see exact entry structure
-      console.log('Entry type:', typeof entry);
-      console.log('Entry JSON:', JSON.stringify(entry));
+      // Use our helper method to get the ID
+      objectId = this.getEntryId(entry);
       
-      // Handle different entry formats
-      if (typeof entry === 'string') {
-        // If entry is already a string ID
-        objectId = entry;
-      } else if (typeof entry === 'object' && entry !== null) {
-        // If entry is an object with objectId property
-        if (entry.objectId !== undefined) {
-          if (typeof entry.objectId === 'string') {
-            objectId = entry.objectId;
-          } else if (typeof entry.objectId === 'object' && entry.objectId !== null) {
-            // If it's a MongoDB ObjectId object, convert to string
-            objectId = JSON.stringify(entry.objectId);
-          } else {
-            objectId = String(entry.objectId);
-          }
-        } 
-        // Try alternative ID fields if objectId isn't available
-        else if (entry._id !== undefined) {
-          objectId = String(entry._id);
-        } else if (entry.id !== undefined) {
-          objectId = String(entry.id);
-        }
-        
-        // Get title if available
-        if (entry.title) {
-          entryTitle = entry.title;
-        }
+      // Get title if available
+      if (typeof entry === 'object' && entry !== null && entry.title) {
+        entryTitle = entry.title;
       }
       
       // Final check to ensure we have an ID
@@ -495,6 +610,31 @@ export class Dashboard implements OnInit, OnDestroy {
    */
   navigateToNewEntry(): void {
     this.router.navigate(['/journal-entry']);
+  }
+  
+  /**
+   * Navigates to the edit journal entry page
+   */
+  navigateToEditEntry(entry: any): void {
+    console.log('Edit button clicked for entry:', entry);
+    const entryId = this.getEntryId(entry);
+    console.log('Extracted entry ID:', entryId);
+    
+    if (entryId) {
+      console.log('Navigating to edit mode with ID:', entryId);
+      this.router.navigate(['/journal-entry'], { 
+        queryParams: { 
+          id: entryId, 
+          mode: 'edit' 
+        } 
+      });
+    } else {
+      console.error('Cannot edit entry: No valid ID found');
+      this.notification = {
+        message: 'Cannot edit entry: Invalid entry ID',
+        isSuccess: false
+      };
+    }
   }
   
   /**
