@@ -37,3 +37,7 @@ build/
 
 # Ignore all .yml files
 *.yml
+
+#Created by IntelliJ IDEA to track changes made by GitHub Copilot
+# This file is used to track changes made by GitHub Copilot in the project.
+.idea/copilotDiffState.xml

@@ -10,6 +10,7 @@ import { isPlatformBrowser } from '@angular/common';
 export class AuthService {
   baseUrl: string = 'http://localhost:8080';
   private tokenKey = 'authToken';
+  private refreshTokenKey = 'refreshToken';
   private userKey = 'userData';
 
   constructor(
@@ -40,46 +41,41 @@ export class AuthService {
     });
     
     return new Observable(observer => {
-      // Use responseType: 'text' to handle plain text responses
+      // Using JSON response type since we expect structured response now
       this.http.post(`${this.baseUrl}/public/login`, {
         username,
         password
-      }, { headers, responseType: 'text' }).subscribe({
+      }, { headers }).subscribe({
         next: (response: any) => {
           console.log('[AuthService] Login response received');
           console.log('[AuthService] Response type:', typeof response);
           
-          let token = null;
+          let jwt = null;
+          let refreshToken = null;
           
-          // Handle direct string token response (which seems to be your case)
-          if (typeof response === 'string' && response.length > 20) {
-            token = response.trim();
-            console.log('[AuthService] Token extracted directly from string response');
-          }
-          
-          // As a fallback, try to parse as JSON if it looks like JSON
-          else if (typeof response === 'string' && response.includes('{')) {
-            try {
-              const jsonResponse = JSON.parse(response);
-              if (jsonResponse.token) {
-                token = jsonResponse.token;
-                console.log('[AuthService] Token extracted from parsed JSON "token" field');
-              } else if (jsonResponse.accessToken) {
-                token = jsonResponse.accessToken;
-                console.log('[AuthService] Token extracted from parsed JSON "accessToken" field');
-              } else if (jsonResponse.jwtToken) {
-                token = jsonResponse.jwtToken;
-                console.log('[AuthService] Token extracted from parsed JSON "jwtToken" field');
-              }
-            } catch (e) {
-              console.error('[AuthService] Error parsing response as JSON:', e);
+          // Handle the new response format: jwt, refreshToken, tokenType
+          if (response) {
+            if (response.jwt) {
+              jwt = response.jwt;
+              console.log('[AuthService] JWT token extracted from response');
+            }
+            
+            if (response.refreshToken) {
+              refreshToken = response.refreshToken;
+              console.log('[AuthService] Refresh token extracted from response');
             }
           }
           
-          if (token) {
-            // Store the token using our consistent key
-            console.log(`[AuthService] Storing token with key "${this.tokenKey}"`);
-            this.setAuthToken(token);
+          if (jwt) {
+            // Store the JWT token using our consistent key
+            console.log(`[AuthService] Storing JWT token with key "${this.tokenKey}"`);
+            this.setAuthToken(jwt);
+            
+            // Store the refresh token if available
+            if (refreshToken && isPlatformBrowser(this.platformId)) {
+              console.log(`[AuthService] Storing refresh token with key "${this.refreshTokenKey}"`);
+              localStorage.setItem(this.refreshTokenKey, refreshToken);
+            }
             
             // Also store credentials for automatic token refresh
             if (isPlatformBrowser(this.platformId)) {
@@ -90,7 +86,12 @@ export class AuthService {
                   console.log('[AuthService] Storing credentials in TokenService for automatic refresh');
                   tokenService.storeCredentials(username, password);
                   // Ensure TokenService has the token (it will use its own consistent key)
-                  tokenService.setToken(token);
+                  tokenService.setToken(jwt);
+                  
+                  // If TokenService has a method to store refresh token, use it
+                  if (tokenService.setRefreshToken && refreshToken) {
+                    tokenService.setRefreshToken(refreshToken);
+                  }
                 }
               } catch (e) {
                 console.error('[AuthService] Could not access TokenService for credential storage:', e);
@@ -100,8 +101,8 @@ export class AuthService {
             observer.next({ success: true });
             observer.complete();
           } else {
-            console.error('[AuthService] No token found in response');
-            observer.error({ error: 'No token found in response' });
+            console.error('[AuthService] No JWT token found in response');
+            observer.error({ error: 'No JWT token found in response' });
           }
         },
         error: (error) => {
@@ -126,8 +127,9 @@ export class AuthService {
     if (isPlatformBrowser(this.platformId)) {
       console.log('[AuthService] Logging out user and clearing tokens');
       
-      // Clear primary token key
+      // Clear primary token keys
       localStorage.removeItem(this.tokenKey);
+      localStorage.removeItem(this.refreshTokenKey);
       
       // Also clear any legacy token keys that might exist
       localStorage.removeItem('jwtToken');
@@ -144,6 +146,11 @@ export class AuthService {
         if (tokenService) {
           console.log('[AuthService] Clearing TokenService credentials on logout');
           tokenService.clearCredentials();
+          
+          // Clear refresh token in TokenService if method exists
+          if (tokenService.clearRefreshToken) {
+            tokenService.clearRefreshToken();
+          }
         }
       } catch (e) {
         console.error('[AuthService] Could not access TokenService for credential clearing:', e);
@@ -190,6 +197,25 @@ export class AuthService {
     if (isPlatformBrowser(this.platformId)) {
       localStorage.removeItem(this.tokenKey);
       localStorage.removeItem(this.userKey);
+    }
+  }
+
+  getRefreshToken(): string | null {
+    if (!isPlatformBrowser(this.platformId)) {
+      return null;
+    }
+    return localStorage.getItem(this.refreshTokenKey);
+  }
+
+  setRefreshToken(refreshToken: string): void {
+    if (isPlatformBrowser(this.platformId)) {
+      localStorage.setItem(this.refreshTokenKey, refreshToken);
+    }
+  }
+
+  clearRefreshToken(): void {
+    if (isPlatformBrowser(this.platformId)) {
+      localStorage.removeItem(this.refreshTokenKey);
     }
   }
 
@@ -254,26 +280,38 @@ export class AuthService {
   }
 
   refreshAuthToken(): void {
-    const token = this.getAuthToken();
-    if (token) {
+    const refreshToken = this.getRefreshToken();
+    if (refreshToken) {
       const headers = new HttpHeaders({
-        'Authorization': `Bearer ${token}`
+        'Content-Type': 'application/json'
       });
       
-      this.http.post(`${this.baseUrl}/public/refresh-token`, {}, { headers }).subscribe({
+      this.http.post(`${this.baseUrl}/public/refresh-token`, { refreshToken }, { headers }).subscribe({
         next: (response: any) => {
-          if (response && response.token) {
-            this.setAuthToken(response.token);
+          if (response) {
+            // Handle the new response format
+            if (response.jwt) {
+              this.setAuthToken(response.jwt);
+              console.log('[AuthService] Auth token refreshed successfully');
+            }
+            
+            if (response.refreshToken) {
+              this.setRefreshToken(response.refreshToken);
+              console.log('[AuthService] Refresh token updated successfully');
+            }
           }
         },
         error: (error) => {
           console.error('Token refresh error:', error);
           if (error.status === 401) {
-            // Token invalid or expired
+            // Token invalid or expired, clear both tokens
             this.clearAuthToken();
+            this.clearRefreshToken();
           }
         }
       });
+    } else {
+      console.warn('[AuthService] No refresh token available to refresh auth token');
     }
   }
 

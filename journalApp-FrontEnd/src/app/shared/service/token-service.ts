@@ -19,6 +19,7 @@ export class TokenService {
   private baseUrl: string = 'http://localhost:8080';
   private credentials: { username: string, password: string } | null = null;
   private tokenKey: string = 'authToken'; // Use the same key as AuthService
+  private refreshTokenKey: string = 'refreshToken'; // Key for refresh token storage
 
   constructor(
     private http: HttpClient,
@@ -53,7 +54,58 @@ export class TokenService {
     return localStorage.getItem(this.tokenKey); // Use tokenKey for consistency
   }
   
-  // Store credentials for silent refresh
+  /**
+   * Check if the current auth token is valid (exists and not expired)
+   * @returns boolean indicating if token is valid
+   */
+  isAuthTokenValid(): boolean {
+    if (!isPlatformBrowser(this.platformId)) {
+      return false;
+    }
+    
+    const token = this.getToken();
+    
+    if (!token) {
+      return false;
+    }
+    
+    try {
+      const decoded: DecodedToken = jwtDecode(token);
+      const expiry = decoded.exp * 1000; // convert to ms
+      const now = Date.now();
+      
+      return expiry > now;
+    } catch (e) {
+      console.error('[TokenService] Error decoding token for validity check:', e);
+      return false;
+    }
+  }
+
+  // Get refresh token from localStorage
+  getRefreshToken(): string | null {
+    if (!isPlatformBrowser(this.platformId)) {
+      return null;
+    }
+    return localStorage.getItem(this.refreshTokenKey);
+  }
+
+  // Set refresh token in localStorage
+  setRefreshToken(refreshToken: string): void {
+    if (isPlatformBrowser(this.platformId)) {
+      localStorage.setItem(this.refreshTokenKey, refreshToken);
+      console.log(`[TokenService] Refresh token stored with key "${this.refreshTokenKey}"`);
+    }
+  }
+
+  // Clear refresh token from localStorage
+  clearRefreshToken(): void {
+    if (isPlatformBrowser(this.platformId)) {
+      localStorage.removeItem(this.refreshTokenKey);
+      console.log('[TokenService] Refresh token cleared');
+    }
+  }
+  
+  // Store credentials for silent refresh (legacy, may be deprecated)
   storeCredentials(username: string, password: string) {
     this.credentials = { username, password };
     // Optionally store encrypted credentials in sessionStorage for persistence
@@ -63,6 +115,8 @@ export class TokenService {
   // Clear stored credentials (call on logout)
   clearCredentials() {
     this.credentials = null;
+    // Also clear refresh token
+    this.clearRefreshToken();
   }
 
   private scheduleRefresh(token: string) {
@@ -92,89 +146,81 @@ export class TokenService {
     }, delay);
   }
 
-  private refreshToken() {
-    // Check if we have stored credentials
-    if (!this.credentials) {
-      console.warn('[TokenService] ⚠️ No credentials stored for token refresh');
-      return;
-    }
-    
-    console.log('[TokenService] Starting automatic token refresh...');
-    
-    const { username, password } = this.credentials;
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json'
-    });
-    
-    // Call the login API with stored credentials
-    this.http.post(`${this.baseUrl}/public/login`, {
-      username,
-      password
-    }, { headers, responseType: 'text' }).subscribe({
-      next: (response: any) => {
-        console.log('[TokenService] Token refresh response received');
-        
-        let newToken = null;
-        
-        // Handle direct string token response
-        if (typeof response === 'string' && response.length > 20) {
-          newToken = response.trim();
-          console.log('[TokenService] ├── Token extracted from direct string response');
-          console.log(`[TokenService] ├── Will be stored with key "${this.tokenKey}"`);
-        }
-        // As a fallback, try to parse as JSON if it looks like JSON
-        else if (typeof response === 'string' && response.includes('{')) {
-          try {
-            const jsonResponse = JSON.parse(response);
-            // Check different possible field names that the backend might use
-            if (jsonResponse.token) {
-              newToken = jsonResponse.token;
-              console.log('[TokenService] ├── Token found in response field "token"');
-            } else if (jsonResponse.accessToken) {
-              newToken = jsonResponse.accessToken;
-              console.log('[TokenService] ├── Token found in response field "accessToken"');
-            } else if (jsonResponse.jwtToken) {
-              newToken = jsonResponse.jwtToken;
-              console.log('[TokenService] ├── Token found in response field "jwtToken"');
-            }
-            
-            // Make it clear we'll still store with our consistent key
-            if (newToken) {
-              console.log(`[TokenService] ├── Will be stored consistently with key "${this.tokenKey}"`);
-            }
-          } catch (e) {
-            console.error('[TokenService] ├── Error parsing response as JSON:', e);
-          }
-        }
-        
-        if (newToken) {
-          // Update the token seamlessly - always use tokenKey for storage
-          if (isPlatformBrowser(this.platformId)) {
-            localStorage.setItem(this.tokenKey, newToken);
-            console.log(`[TokenService] ✅ Token refreshed successfully and stored as "${this.tokenKey}"`);
-            
-            // Schedule next refresh after storing
-            this.scheduleRefresh(newToken);
+  // Changed from private to public to allow direct calling
+  refreshToken(): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      // Get the refresh token from localStorage
+      const refreshToken = this.getRefreshToken();
+      
+      if (!refreshToken) {
+        console.warn('[TokenService] ⚠️ No refresh token available for token refresh');
+        resolve(false);
+        return;
+      }
+      
+      console.log('[TokenService] Starting automatic token refresh using refresh token...');
+      
+      const headers = new HttpHeaders({
+        'Content-Type': 'application/json'
+      });
+      
+      // Call the refresh-token API with the refresh token
+      // Request body: { token: refreshToken }
+      this.http.post(`${this.baseUrl}/public/refresh-token`, {
+        token: refreshToken
+      }, { headers, responseType: 'text' }).subscribe({
+        next: (response: any) => {
+          console.log('[TokenService] Token refresh response received');
+          
+          let newToken = null;
+          
+          // Handle direct string JWT token response
+          if (typeof response === 'string' && response.length > 20) {
+            newToken = response.trim();
+            console.log('[TokenService] ├── JWT token received as string response');
           }
           
-          try {
-            // Try to decode token to show new expiry
-            const decoded: DecodedToken = jwtDecode(newToken);
-            if (decoded.exp) {
-              const newExpiry = new Date(decoded.exp * 1000);
-              console.log(`[TokenService] └── New token expires: ${newExpiry.toLocaleString()}`);
+          if (newToken) {
+            // Update the token seamlessly - always use tokenKey for storage
+            if (isPlatformBrowser(this.platformId)) {
+              localStorage.setItem(this.tokenKey, newToken);
+              console.log(`[TokenService] ✅ JWT token refreshed successfully and stored as "${this.tokenKey}"`);
+              
+              // Schedule next refresh after storing
+              this.scheduleRefresh(newToken);
+              
+              // Indicate success
+              resolve(true);
+            } else {
+              resolve(false);
             }
-          } catch (e) {
-            console.log('[TokenService] └── Could not decode new token expiry');
+            
+            try {
+              // Try to decode token to show new expiry
+              const decoded: DecodedToken = jwtDecode(newToken);
+              if (decoded.exp) {
+                const newExpiry = new Date(decoded.exp * 1000);
+                console.log(`[TokenService] └── New JWT token expires: ${newExpiry.toLocaleString()}`);
+              }
+            } catch (e) {
+              console.log('[TokenService] └── Could not decode new token expiry');
+            }
+          } else {
+            console.error('[TokenService] ❌ No JWT token found in refresh response');
+            resolve(false);
           }
-        } else {
-          console.error('[TokenService] ❌ No token found in refresh response');
+        },
+        error: (err) => {
+          console.error('[TokenService] ❌ Token refresh failed', err);
+          // Optional: Handle specific error cases, such as invalid refresh token
+          if (err.status === 401) {
+            console.warn('[TokenService] Refresh token appears to be invalid or expired');
+            // Clear the invalid refresh token but don't logout automatically
+            this.clearRefreshToken();
+          }
+          resolve(false);
         }
-      },
-      error: (err) => {
-        console.error('[TokenService] ❌ Token refresh failed', err);
-        // Do not logout - just log the error
-      }
+      });
     });
   }  // Call this on app startup (optional)
   // Consolidate any tokens that might be stored with inconsistent keys
@@ -219,6 +265,12 @@ export class TokenService {
       }
     }
     
+    // Also check for refresh token existence
+    const refreshToken = this.getRefreshToken();
+    if (refreshToken) {
+      console.log('[TokenService] Found existing refresh token');
+    }
+    
     return existingToken || this.getToken();
   }
 
@@ -237,5 +289,103 @@ export class TokenService {
     } else {
       console.log('[TokenService] No token found, refresh system not initialized');
     }
+  }
+  
+  /**
+   * Validates the current authentication state and refreshes tokens if needed
+   * @returns Promise that resolves to a boolean indicating if valid authentication exists
+   */
+  validateTokenAndRefresh(): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      // First check if we have an auth token
+      const authToken = this.getToken();
+      
+      if (authToken) {
+        console.log('[TokenService] Auth token found, checking validity');
+        
+        try {
+          // Decode and check if expired
+          const decoded: DecodedToken = jwtDecode(authToken);
+          const expiry = decoded.exp * 1000; // convert to ms
+          const now = Date.now();
+          
+          // If token is not expired, we're good
+          if (expiry > now) {
+            console.log('[TokenService] Auth token is valid and not expired');
+            resolve(true);
+            return;
+          } else {
+            console.log('[TokenService] Auth token has expired, checking for refresh token');
+          }
+        } catch (e) {
+          console.error('[TokenService] Error decoding auth token:', e);
+        }
+      } else {
+        console.log('[TokenService] No auth token found, checking for refresh token');
+      }
+      
+      // At this point, either no auth token exists or it has expired
+      // Check for refresh token
+      const refreshToken = this.getRefreshToken();
+      
+      if (!refreshToken) {
+        console.log('[TokenService] No refresh token available, authentication invalid');
+        resolve(false);
+        return;
+      }
+      
+      console.log('[TokenService] Refresh token found, attempting to get new auth token');
+      
+      // Use refresh token to get a new auth token
+      const headers = new HttpHeaders({
+        'Content-Type': 'application/json'
+      });
+      
+      this.http.post(`${this.baseUrl}/public/refresh-token`, {
+        token: refreshToken
+      }, { headers, responseType: 'text' }).subscribe({
+        next: (response: any) => {
+          console.log('[TokenService] Token refresh response received');
+          
+          let newToken = null;
+          
+          // Handle direct string JWT token response
+          if (typeof response === 'string' && response.length > 20) {
+            newToken = response.trim();
+            console.log('[TokenService] New JWT token received successfully');
+          }
+          
+          if (newToken) {
+            // Update the token seamlessly
+            if (isPlatformBrowser(this.platformId)) {
+              localStorage.setItem(this.tokenKey, newToken);
+              console.log(`[TokenService] JWT token refreshed and stored successfully`);
+              
+              // Schedule next refresh
+              this.scheduleRefresh(newToken);
+              
+              // Authentication is now valid
+              resolve(true);
+            } else {
+              resolve(false);
+            }
+          } else {
+            console.error('[TokenService] No JWT token found in refresh response');
+            resolve(false);
+          }
+        },
+        error: (err) => {
+          console.error('[TokenService] Token refresh failed', err);
+          
+          // If the refresh token is invalid, clear it
+          if (err.status === 401) {
+            console.warn('[TokenService] Refresh token appears to be invalid or expired');
+            this.clearRefreshToken();
+          }
+          
+          resolve(false);
+        }
+      });
+    });
   }
 }

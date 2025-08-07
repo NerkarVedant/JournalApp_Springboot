@@ -2,6 +2,7 @@ import { Component, Inject, PLATFORM_ID } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { AuthService } from '../../shared/service/auth-service';
+import { TokenService } from '../../shared/service/token-service';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { NavigationService } from '../../shared/service/navigation.service';
@@ -25,7 +26,8 @@ export class SignIn {
   platformId: Object;
 
   constructor(
-    private authService: AuthService, 
+    private authService: AuthService,
+    private tokenService: TokenService,
     private router: Router,
     private http: HttpClient,
     private navigationService: NavigationService,

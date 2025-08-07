@@ -1,5 +1,6 @@
 package com.learnpr1.journalApp.controller;
 
+import com.learnpr1.journalApp.entity.AuthResponseDTO;
 import com.learnpr1.journalApp.entity.User;
 import com.learnpr1.journalApp.service.UserDetailServiceIMPL;
 import com.learnpr1.journalApp.service.UserService;
@@ -13,6 +14,8 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -48,13 +51,17 @@ public class PublicController {
     }
 
     @PostMapping("/login")            //localhost:8080/journal --Post--
-    public ResponseEntity<String> login(@RequestBody User user){
+    public ResponseEntity<?> login(@RequestBody User user){
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));
             UserDetails userDetails=userServiceDetail.loadUserByUsername(user.getUsername());
-            String jwt=jwtUtil.generateToken(userDetails.getUsername());
-            return new ResponseEntity<>(jwt,HttpStatus.OK); // OK
+            String username = userDetails.getUsername();
+            String jwt=jwtUtil.generateToken(username);
+            String refreshToken=jwtUtil.generateRefreshToken(username);
+
+            AuthResponseDTO authResponse = new AuthResponseDTO(jwt, refreshToken);
+            return new ResponseEntity<>(authResponse, HttpStatus.OK);
 
         }
         catch (Exception e) {
@@ -62,5 +69,10 @@ public class PublicController {
             return new ResponseEntity<>("Invalid username or password", HttpStatus.BAD_REQUEST);
         }
     }
-}
 
+    @PostMapping("/refresh-token")
+    public ResponseEntity<String> refreshToken(@RequestBody Map<String, String> body) {
+        String token = body.get("token");
+        return new ResponseEntity<>(jwtUtil.returnAccessToken(token), HttpStatus.OK);
+    }
+}
