@@ -2,6 +2,7 @@ package com.learnpr1.journalApp.service;
 
 import ch.qos.logback.core.joran.spi.HttpUtil;
 import com.learnpr1.journalApp.ApiResponse.WeatherResponse;
+import com.learnpr1.journalApp.Cache.AppCache;
 import com.learnpr1.journalApp.entity.JournalEntry;
 import com.learnpr1.journalApp.repositary.JournalEntryRepo;
 import com.mashape.unirest.http.JsonNode;
@@ -41,15 +42,18 @@ public class ExternalApiService {
     @Autowired
     private JournalEntryRepo journalEntryRepo;//Class in spring which processes http requests and gives responses
 
+    @Autowired
+    private AppCache appCache; // Cache to store application configurations
+
     @Value("${weather.api.key}")
     private String weatherApiKey; // Injected from application.properties
-    private String baseUrl="http://api.weatherstack.com/current";
+
 
     public ExternalApiService() throws IOException {
     }
 
     public WeatherResponse getWeather(String cityName) {
-        String finalAPI = baseUrl + "?access_key=" + weatherApiKey + "&query=" + cityName;
+        String finalAPI = appCache.APP_CACHE.get("WeatherApi") + "?access_key=" + weatherApiKey + "&query=" + cityName;
         ResponseEntity<WeatherResponse> response = restTemplate.exchange(finalAPI, HttpMethod.GET, null, WeatherResponse.class);
         return response.getBody();
 
