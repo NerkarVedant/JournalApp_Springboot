@@ -88,15 +88,56 @@
 			<version>0.12.6</version>
 			<scope>runtime</scope>
 		</dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-inline</artifactId>
+            <version>5.2.0</version>
+            <scope>test</scope>
+        </dependency>
+<!--        The Mockito warning is about Java 22+ blocking dynamic agents.-->
+<!--        // Mockito-inline is used for mocking final classes and methods in tests-->
+<!--        this supresses the warning that we get while using mockito with java 17 and above-->
+<!--        Right now, I’m dynamically attaching myself as an agent at runtime. Future Java versions won’t allow this, so you should explicitly configure me as an agent in your build instead.”-->
+<!--        ✅ Why this happens-->
+<!--        Newer JDKs (22+) restrict dynamic agent loading for security/stability reasons.-->
+<!--        Mockito (when using inline mocking) uses ByteBuddy Agent to mock final classes, static methods, etc.-->
+<!--        Since Java is tightening rules, Mockito warns you to configure it properly.-->
+
+
+
 	</dependencies>
 
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
-			</plugin>
-		</plugins>
-	</build>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+
+            </plugin>
+            <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>3.5.3</version>
+                    <configuration>
+                        <argLine>-XX:+EnableDynamicAgentLoading</argLine>
+<!--                        the above line enables dynamic agent loading by adding the JVM argument -XX:+EnableDynamicAgentLoading.-->
+<!--                        This is necessary for Mockito to function properly with Java 22 and above.-->
+                        <argLine>
+                            -javaagent:${settings.localRepository}/net/bytebuddy/byte-buddy-agent/1.17.6/byte-buddy-agent-1.17.6.jar
+<!--                            the above line specifies the path to the ByteBuddy agent JAR file, which is required for Mockito to perform inline mocking.-->
+
+                        </argLine>
+                    </configuration>
+            </plugin>
+<!--            I have added the above maven-surefire-plugin to supress the warning-->
+<!--            It does EnableDynamicAgentLoading-->
+<!--            surefire-plugins purpose is to run the unit tests of an application.-->
+<!--            It is used during the test phase of the build lifecycle.-->
+<!--            It generates reports in different formats, including plain text, XML, and HTML.-->
+<!--            It can be configured to include or exclude specific tests based on patterns.-->
+<!--            It supports parallel test execution to speed up the testing process.-->
+        </plugins>
+    </build>
 
 </project>

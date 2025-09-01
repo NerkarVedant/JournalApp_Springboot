@@ -1,8 +1,8 @@
 package com.learnpr1.journalApp.entity;
 
 
-import lombok.Data;
-import lombok.NonNull;
+import com.mongodb.connection.ProxySettings;
+import lombok.*;
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -14,6 +14,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+
 @Document(collation = "en")
 public class User {
     @Id     //this is the unique key
@@ -33,4 +37,10 @@ public class User {
 
     //role of the user
     private List<String>roles;
+
+
+    private String email;
+    private boolean sentimentAnalysis;
+
+//    private boolean sentimentAnalysis = false; // Default value is false
 }

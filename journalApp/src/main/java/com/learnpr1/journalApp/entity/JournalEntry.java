@@ -17,7 +17,7 @@ import java.util.Date;
 //Lombok annotations
 //@Getter
 //@Setter
-//@AllArgsConstructor
+@AllArgsConstructor
 @NoArgsConstructor          //IMP -- it is needed for conversion of JSON to POJO (plane old java object)
 @Data
 //@ToString
