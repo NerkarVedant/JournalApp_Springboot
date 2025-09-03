@@ -1,4 +1,4 @@
-package com.learnpr1.journalApp;
+package com.learnpr1.journalApp.services;
 
 import com.learnpr1.journalApp.entity.User;
 import com.learnpr1.journalApp.repositary.UserRepo;
@@ -10,10 +10,7 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.ArrayList;
 

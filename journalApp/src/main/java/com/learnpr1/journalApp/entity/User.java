@@ -29,8 +29,8 @@ public class User {
     @NonNull
     private String password;
 
-    @DBRef      //It will keep the reference of the Enteryes in the journalEntries
-                //ex journalEntryList:[ DBRef ("journalentries",ObjectID("5948357492394"))
+    @DBRef      //It will keep the reference of the Entries in the journalEntries
+                //ex journalEntryList:[ DBRef ("journal entries",ObjectID("5948357492394"))
 
                 //Only embedding the ID and not the whole entry
     private List<JournalEntry> journalEntryList=new ArrayList<>();

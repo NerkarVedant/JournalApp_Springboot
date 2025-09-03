@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CopilotDiffPersistence">
+    <option name="pendingDiffs">
+      <map>
+        <entry key="$PROJECT_DIR$/journalApp/src/main/java/com/learnpr1/journalApp/entity/AuthResponse.java">
+          <value>
+            <PendingDiffInfo>
+              <option name="filePath" value="$PROJECT_DIR$/journalApp/src/main/java/com/learnpr1/journalApp/entity/AuthResponse.java" />
+              <option name="updatedContent" value="package com.learnpr1.journalApp.entity;&#10;&#10;import lombok.AllArgsConstructor;&#10;import lombok.Data;&#10;import lombok.NoArgsConstructor;&#10;&#10;@Data&#10;@NoArgsConstructor&#10;@AllArgsConstructor&#10;public class AuthResponse {&#10;    private String accessToken;&#10;    private String refreshToken;&#10;    private String tokenType = &quot;Bearer&quot;;&#10;    &#10;    public AuthResponse(String accessToken, String refreshToken) {&#10;        this.accessToken = accessToken;&#10;        this.refreshToken = refreshToken;&#10;    }&#10;}" />
+            </PendingDiffInfo>
+          </value>
+        </entry>
+        <entry key="$PROJECT_DIR$/journalApp/src/test/java/com/learnpr1/journalApp/UserServiceTest.java">
+          <value>
+            <PendingDiffInfo>
+              <option name="filePath" value="$PROJECT_DIR$/journalApp/src/test/java/com/learnpr1/journalApp/UserServiceTest.java" />
+              <option name="originalContent" value="package com.learnpr1.journalApp;&#10;&#10;import com.learnpr1.journalApp.service.UserService;&#10;import org.junit.jupiter.api.Test;&#10;import org.springframework.beans.factory.annotation.Autowired;&#10;import org.springframework.boot.test.context.SpringBootTest;&#10;&#10;import static org.junit.jupiter.api.Assertions.assertEquals;&#10;&#10;@SpringBootTest&#10;public class UserServiceTest {&#10;&#10;    @Autowired&#10;    private UserService userService;&#10;&#10;    @Test&#10;    public void TestUserService(){&#10;        assertEquals(4,2+2);&#10;    }&#10;}&#10;" />
+              <option name="updatedContent" value="package com.learnpr1.journalApp;&#10;&#10;import com.learnpr1.journalApp.service.UserService;&#10;import org.junit.jupiter.api.Test;&#10;import org.springframework.beans.factory.annotation.Autowired;&#10;import org.springframework.boot.test.context.SpringBootTest;&#10;&#10;import static org.junit.jupiter.api.Assertions.assertEquals;&#10;&#10;@SpringBootTest&#10;public class UserServiceTest {&#10;&#10;    @Autowired&#10;    private UserService userService;&#10;&#10;    @Test&#10;    public void TestUserService(){&#10;        assertEquals(4,2+2);&#10;    }&#10;}" />
+            </PendingDiffInfo>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>

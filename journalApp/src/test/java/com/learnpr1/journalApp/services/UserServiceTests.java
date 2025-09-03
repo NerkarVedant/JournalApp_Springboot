@@ -1,10 +1,9 @@
-package com.learnpr1.journalApp;
+package com.learnpr1.journalApp.services;
 
 import com.learnpr1.journalApp.repositary.UserRepo;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvFileSource;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

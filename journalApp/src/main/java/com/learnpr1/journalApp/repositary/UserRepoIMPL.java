@@ -35,6 +35,8 @@ public class UserRepoIMPL {
         query.addCriteria(Criteria.where("email").regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")); // Check if email is a valid format
         query.addCriteria(Criteria.where("sentimentAnalysis").is(true)); // Check if sentimentAnalysis is true
 
+//        query.addCriteria(Criteria.where("username").nin("Rajat","Ankit")); // username should not be in the list
+
         // You can add more criteria and use "AND" "OR" conditions as needed
         // Example of using OR condition
         // Criteria criteria = Criteria.where("email").exists(true).orOperator
@@ -51,4 +53,10 @@ public class UserRepoIMPL {
         List<User> users = mongoTemplate.find(query, User.class);
         return users;
     }
+
+    //scheduler
+
+
+
+
 }

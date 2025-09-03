@@ -97,13 +97,18 @@
         </dependency>
 <!--        The Mockito warning is about Java 22+ blocking dynamic agents.-->
 <!--        // Mockito-inline is used for mocking final classes and methods in tests-->
-<!--        this supresses the warning that we get while using mockito with java 17 and above-->
+<!--        this suppresses the warning that we get while using mockito with java 17 and above-->
 <!--        Right now, I’m dynamically attaching myself as an agent at runtime. Future Java versions won’t allow this, so you should explicitly configure me as an agent in your build instead.”-->
 <!--        ✅ Why this happens-->
 <!--        Newer JDKs (22+) restrict dynamic agent loading for security/stability reasons.-->
 <!--        Mockito (when using inline mocking) uses ByteBuddy Agent to mock final classes, static methods, etc.-->
 <!--        Since Java is tightening rules, Mockito warns you to configure it properly.-->
-
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+            <version>4.0.0-M2</version>
+        </dependency>
+<!--        //spring boot starter mail is used to send emails in spring boot applications-->
 
 
 	</dependencies>
