@@ -1,11 +1,9 @@
 package com.learnpr1.journalApp.service;
 
-import ch.qos.logback.core.joran.spi.HttpUtil;
 import com.learnpr1.journalApp.ApiResponse.WeatherResponse;
 import com.learnpr1.journalApp.Cache.AppCache;
 import com.learnpr1.journalApp.entity.JournalEntry;
 import com.learnpr1.journalApp.repositary.JournalEntryRepo;
-import com.mashape.unirest.http.JsonNode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -18,19 +16,15 @@ import org.springframework.web.client.RestTemplate;
 
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.URL;
 
 @Service
 @Component

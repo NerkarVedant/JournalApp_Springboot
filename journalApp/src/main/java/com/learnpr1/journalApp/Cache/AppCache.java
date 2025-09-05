@@ -5,7 +5,6 @@ import com.learnpr1.journalApp.entity.ConfigJournalAppEntity;
 import com.learnpr1.journalApp.repositary.ConfigJournalAppRepo;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;

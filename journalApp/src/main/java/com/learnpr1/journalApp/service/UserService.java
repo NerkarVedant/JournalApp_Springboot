@@ -1,7 +1,6 @@
 package com.learnpr1.journalApp.service;
 
 
-import com.learnpr1.journalApp.entity.JournalEntry;
 import com.learnpr1.journalApp.entity.User;
 import com.learnpr1.journalApp.repositary.UserRepo;
 import lombok.extern.slf4j.Slf4j;
@@ -16,11 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
-import java.util.logging.Logger;
 
 
 @Service

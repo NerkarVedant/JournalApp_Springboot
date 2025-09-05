@@ -15,7 +15,6 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 @Slf4j
@@ -49,7 +48,7 @@ public class UserScheduler {
     }
 
 
-    @Scheduled(cron="0 * * ? * *") //E
+    @Scheduled(cron="0 * * ? * *") //Every min
     public void relodeAppCache(){
         appCache.init();
         log.info("App Cache reloaded at {}", LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS));

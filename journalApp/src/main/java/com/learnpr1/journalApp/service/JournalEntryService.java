@@ -5,6 +5,7 @@ import com.learnpr1.journalApp.entity.JournalEntry;
 import com.learnpr1.journalApp.entity.JournalEntryDTO;
 import com.learnpr1.journalApp.entity.User;
 import com.learnpr1.journalApp.repositary.JournalEntryRepo;
+import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,8 +16,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.lang.constant.ConstantDesc;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
 //here we write all out business logic
 @Service
 @Component
+@Slf4j
 public class JournalEntryService {
 
     @Autowired      //dependency injection
@@ -36,6 +38,9 @@ public class JournalEntryService {
 
     @Autowired
     private ExternalApiService externalApiService;
+
+    @Autowired
+    private RedisService redisService;
 
     @Transactional
     public ResponseEntity<JournalEntry> saveJournalEntry(JournalEntry journalEntry){
@@ -66,16 +71,33 @@ public class JournalEntryService {
 
 
     public ResponseEntity<?> getAllJournalEntries(){
+        log.info("Entered getAllJournalEntries method");
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
-        User user=userService.findByUserName(username);
-        List<JournalEntryDTO> all =user.getJournalEntryList().stream().map(JournalEntryDTO::new).collect(Collectors.toList());
-        if(!all.isEmpty()){
-            return new ResponseEntity<>(all, HttpStatus.OK);
+        log.info("Fetching journal entries for user: {}", username);
+        List<JournalEntryDTO> cachedEntries = redisService.getJournalEntriesFromCache(username);
+        if (cachedEntries != null && !cachedEntries.isEmpty()) {
+
+            log.info("Cache hit for user: {}", username);
+            return new ResponseEntity<>(cachedEntries, HttpStatus.OK);
+
         }
         else{
-            return new ResponseEntity<>(HttpStatus.OK);
+            User user=userService.findByUserName(username);
+            List<JournalEntryDTO> all =user.getJournalEntryList().stream().map(JournalEntryDTO::new).collect(Collectors.toList());
+            if(!all.isEmpty()){
+                redisService.saveJournalEntryriesToCache(username, all);
+                log.info("Cache miss for user: {}. Data fetched from DB and cached.", username);
+                return new ResponseEntity<>(all, HttpStatus.OK);
+            }
+            else{
+                log.info("No journal entries found for user: {}", username);
+                return new ResponseEntity<>(HttpStatus.OK);
+
+            }
         }
+
+
 
 
     }

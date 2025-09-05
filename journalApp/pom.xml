@@ -108,10 +108,28 @@
             <artifactId>spring-boot-starter-mail</artifactId>
             <version>4.0.0-M2</version>
         </dependency>
-<!--        //spring boot starter mail is used to send emails in spring boot applications-->
+<!--        spring boot starter mail is used to send emails in spring boot applications-->
+
+<!--        <dependency>-->
+<!--            <groupId>org.springframework.boot</groupId>-->
+<!--            <artifactId>spring-boot-starter-data-redis</artifactId>-->
+<!--            <version>4.0.0-M2</version>-->
+<!--        </dependency>-->
+<!--        //spring boot starter data redis is used to interact with redis database in spring boot applications-->
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
 
 
-	</dependencies>
+
+    </dependencies>
 
     <build>
         <plugins>
