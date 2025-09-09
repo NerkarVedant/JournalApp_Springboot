@@ -42,11 +42,24 @@ public class JournalEntryService {
     @Autowired
     private RedisService redisService;
 
+
+    public List<JournalEntryDTO> getEntiresFromDatabase(String username){
+        User user=userService.findByUserName(username);
+        if(user!=null){
+            return user.getJournalEntryList().stream().map(JournalEntryDTO::new).collect(Collectors.toList());
+        }
+        return Collections.emptyList();
+    }
+
+    public String returnUsername(){
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication.getName();
+    }
+
     @Transactional
     public ResponseEntity<JournalEntry> saveJournalEntry(JournalEntry journalEntry){
         try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String username = authentication.getName();
+            String username = returnUsername();
             User user=userService.findByUserName(username);
             journalEntry.setDate(LocalDateTime.now());
 
@@ -62,6 +75,8 @@ public class JournalEntryService {
             //but it will not get referenced with the user, means there will be a waste of the space
             //so to avoid it we make it transactional means this all code will be treated as one
             userService.saveuser(user);
+            List<JournalEntryDTO> entries=getEntiresFromDatabase(username);
+            redisService.updateJournalEntriesInCache(username, entries);
             return new ResponseEntity<>(journalEntry,HttpStatus.CREATED);
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
@@ -72,8 +87,8 @@ public class JournalEntryService {
 
     public ResponseEntity<?> getAllJournalEntries(){
         log.info("Entered getAllJournalEntries method");
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName();
+        String username = returnUsername();
+
         log.info("Fetching journal entries for user: {}", username);
         List<JournalEntryDTO> cachedEntries = redisService.getJournalEntriesFromCache(username);
         if (cachedEntries != null && !cachedEntries.isEmpty()) {
@@ -83,8 +98,7 @@ public class JournalEntryService {
 
         }
         else{
-            User user=userService.findByUserName(username);
-            List<JournalEntryDTO> all =user.getJournalEntryList().stream().map(JournalEntryDTO::new).collect(Collectors.toList());
+            List<JournalEntryDTO> all=getEntiresFromDatabase(username);
             if(!all.isEmpty()){
                 redisService.saveJournalEntryriesToCache(username, all);
                 log.info("Cache miss for user: {}. Data fetched from DB and cached.", username);
@@ -111,8 +125,8 @@ public class JournalEntryService {
 
 
     public ResponseEntity<?>getJournalEntryByID(ObjectId id){
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName();
+        String username = returnUsername();
+
         User user = userService.findByUserName(username);
         Optional<JournalEntry> journalEntryList=user.getJournalEntryList().stream().filter(x -> x.getId().equals(id)).findFirst();
         if(journalEntryList.isPresent()) {
@@ -129,8 +143,8 @@ public class JournalEntryService {
     @Transactional
     public ResponseEntity<String> deleteObjectById(ObjectId id){
         try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String username = authentication.getName();
+            String username = returnUsername();
+
             User user = userService.findByUserName(username);
 
             // here if we don't write the below sentence spring will still delete
@@ -145,6 +159,8 @@ public class JournalEntryService {
             Optional<JournalEntry> journalEntry = findObjectById(id);
             if (journalEntry.isPresent()) {
                 journalEntryRepo.deleteById(id);
+                List<JournalEntryDTO> entries=getEntiresFromDatabase(username);
+                redisService.updateJournalEntriesInCache(username, entries);
                 return new ResponseEntity<>("Entry Deleted", HttpStatus.OK);
             } else {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
@@ -162,11 +178,15 @@ public class JournalEntryService {
     public ResponseEntity<?> updatejournalEntry(ObjectId id, JournalEntry updatedEntry){
         JournalEntry oldEntry = journalEntryRepo.findById(id).orElse(null);
         if (oldEntry != null){
+            String username = returnUsername();
+
             oldEntry.setTitle(updatedEntry.getTitle() != null && !updatedEntry.getTitle().isEmpty() ?updatedEntry.getTitle(): oldEntry.getTitle());
             oldEntry.setContent(updatedEntry.getContent() !=null && !updatedEntry.getContent().isEmpty() ? updatedEntry.getContent(): oldEntry.getContent());
             byte[] audiobyte=externalApiService.generateSpeechFile(oldEntry);
             oldEntry.setAudioFile(audiobyte);
             journalEntryRepo.save(oldEntry);
+            List<JournalEntryDTO> entries=getEntiresFromDatabase(username);
+            redisService.updateJournalEntriesInCache(username, entries);
             return new ResponseEntity<>("Entry updated successfully", HttpStatus.OK);
         }
         else {

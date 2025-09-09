@@ -56,13 +56,27 @@ public class RedisService {
         System.out.println(">>> Using template: " + journalEntryDTORedisTemplate.getValueSerializer().getClass().getName());
 
         String key = "user" + username;
-        journalEntryDTORedisTemplate.opsForList().rightPushAll(username, entries);
+        journalEntryDTORedisTemplate.opsForList().rightPushAll(key, entries);
     }
 
     public List<JournalEntryDTO> getJournalEntriesFromCache(String username) {
         String key = "user" + username;
-        return journalEntryDTORedisTemplate.opsForList().range(username, 0, -1);
+        return journalEntryDTORedisTemplate.opsForList().range(key, 0, -1);
 
+    }
+
+    public void deleteJournalEntriesFromCache(String key) {
+        journalEntryDTORedisTemplate.delete(key);
+    }
+
+    public void updateJournalEntriesInCache(String username,List<JournalEntryDTO> entries) {
+        log.info("Entered UpdateJournalEntriesInCache method for user: {}", username);
+        String key = "user" + username;
+        deleteJournalEntriesFromCache(key);
+        log.info("Deleted existing cache for user: {}", username);
+
+        saveJournalEntryriesToCache(username, entries);
+        log.info("Updated cache with latest entries for user: {}", username);
     }
 
 }
