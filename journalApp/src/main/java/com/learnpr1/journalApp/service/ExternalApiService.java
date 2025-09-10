@@ -1,5 +1,7 @@
 package com.learnpr1.journalApp.service;
 
+import com.google.genai.Client;
+import com.google.genai.types.GenerateContentResponse;
 import com.learnpr1.journalApp.ApiResponse.WeatherResponse;
 import com.learnpr1.journalApp.Cache.AppCache;
 import com.learnpr1.journalApp.entity.JournalEntry;
@@ -25,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.io.*;
+import java.util.List;
 
 @Service
 @Component
@@ -82,7 +85,7 @@ public class ExternalApiService {
         String currentWeater="";
         if (weatherResponse != null ) {
             currentWeater = " Temperature: " + weatherResponse.getCurrent().getTemperature() + "°C, " +
-                            "\n Feels like: " + weatherResponse.getCurrent().getWeather_descriptions().get(0)+
+                            "\n Feels like: " + weatherResponse.getCurrent().getWeather_descriptions().getFirst()+
                             "\n Sunrise: " + weatherResponse.getCurrent().getAstro().getSunrise() +
                             "\n Sunset: " + weatherResponse.getCurrent().getAstro().getSunset() +
                             "\n Air Quality CO: " + weatherResponse.getCurrent().getAir_quality().getCo() +
@@ -159,10 +162,46 @@ public class ExternalApiService {
             }
         } catch (Exception e) {
             System.out.println("❌ Error: " + e.getMessage());
-            e.printStackTrace();
+
         }
 
         return audioBytes;
+    }
+    String prompt = """
+            You are an empathetic personal assistant who writes weekly reflection reports
+            based on a user’s journal entries.
+            
+            The user has written multiple journal entries this week. Your job is to:
+            1. Summarize the key themes, moods, and highlights from the week.
+            2. Identify emotional patterns (positive or negative).
+            3. Mention any recurring thoughts, habits, or struggles.
+            4. Point out small wins or progress the user made.
+            5. End with a thoughtful, encouraging message written in a warm, supportive tone.
+            
+            Make it detailed, reflective, and personal—like a close friend giving feedback.
+            Avoid being generic; tie your insights directly to the user’s actual entries.
+            Now write the user’s weekly report:
+            Here are the journal entries for the week:
+            """;
+
+    @Value("${google.gemini.api.key}")
+    String geminiApiKey; // Replace with your Gemini API key
+    public String generateTextUsingGemini(String entries) {
+        String personalizedPrompt = prompt+ entries;
+//        System.out.println("Personalized Prompt: " + personalizedPrompt); // Debugging line
+        try {
+            Client client = Client.builder().apiKey(geminiApiKey).build();
+
+            GenerateContentResponse response =
+                    client.models.generateContent(
+                            "gemini-2.5-flash",
+                            personalizedPrompt,
+                            null);
+
+            return response.text();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }
 
