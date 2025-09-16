@@ -5,6 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,8 +26,10 @@ public class RedisService {
 
     //    @Qualifier("journalEntryDTORedisTemplate")
     @Autowired
-
     private RedisTemplate<String,JournalEntryDTO> journalEntryDTORedisTemplate;
+
+    @Autowired
+    private RedisTemplate<String, String> redisTemplate;
 
 //    public <T> T get(String key, Class<T> entityClass) {
 //        try{
@@ -77,6 +84,33 @@ public class RedisService {
 
         saveJournalEntryriesToCache(username, entries);
         log.info("Updated cache with latest entries for user: {}", username);
+    }
+
+
+
+    //Below code if for Authentication of refresh token
+
+    public void saveRefreshToken(String username, String refreshToken, Long ttl) {
+        String key = "refreshToken:" + username;
+        redisTemplate.opsForValue().set(key, refreshToken, ttl, TimeUnit.MILLISECONDS);
+        log.info("Saved refresh token for user: {}", username);
+    }
+
+    public boolean validateRefreshToken(String username, String refreshToken) {
+        String key = "refreshToken:" + username;
+        String storedToken = redisTemplate.opsForValue().get(key);
+        boolean isValid = refreshToken.equals(storedToken);
+        log.info("Refresh token validation for user {}: {}", username, isValid);
+        return isValid;
+    }
+
+    public ResponseEntity<String> deleteRefreshToken() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username=authentication.getName();
+        String key = "refreshToken:" + username;
+        redisTemplate.delete(key);
+        log.info("Deleted refresh token for user: {}", username);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
 }

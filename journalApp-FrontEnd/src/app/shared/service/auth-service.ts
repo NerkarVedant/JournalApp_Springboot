@@ -127,6 +127,28 @@ export class AuthService {
     if (isPlatformBrowser(this.platformId)) {
       console.log('[AuthService] Logging out user and clearing tokens');
       
+      // Call the logout API endpoint
+      const token = this.getAuthToken();
+      if (token) {
+        const headers = new HttpHeaders({
+          'Authorization': `Bearer ${token}`
+        });
+        
+        // Call the backend logout API
+        this.http.put(`${this.baseUrl}/user/logout`, {}, { headers })
+          .subscribe({
+            next: (response) => {
+              console.log('[AuthService] Logout API call successful:', response);
+            },
+            error: (error) => {
+              console.error('[AuthService] Logout API call failed:', error);
+            },
+            complete: () => {
+              console.log('[AuthService] Logout API call completed');
+            }
+          });
+      }
+      
       // Clear primary token keys
       localStorage.removeItem(this.tokenKey);
       localStorage.removeItem(this.refreshTokenKey);

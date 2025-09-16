@@ -2,6 +2,7 @@ package com.learnpr1.journalApp.controller;
 
 
 import com.learnpr1.journalApp.entity.User;
+import com.learnpr1.journalApp.service.RedisService;
 import com.learnpr1.journalApp.service.UserService;
 import com.learnpr1.journalApp.service.ExternalApiService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,9 @@ public class UserController {
 
     @Autowired
     private ExternalApiService externalApiService;
+
+    @Autowired
+    private RedisService redisService;
 
 
 
@@ -38,6 +42,12 @@ public class UserController {
     public ResponseEntity<?> showTemperature(){
         return externalApiService.temperature();
     }
+
+    @PutMapping("/logout")
+    public ResponseEntity<String> logoutUser() {
+        return redisService.deleteRefreshToken();
+    }
+
 
 
 

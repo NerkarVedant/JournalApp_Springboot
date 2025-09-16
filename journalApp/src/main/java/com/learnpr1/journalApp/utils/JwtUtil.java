@@ -1,6 +1,8 @@
 package com.learnpr1.journalApp.utils;
 
 
+import com.learnpr1.journalApp.service.RedisService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import io.jsonwebtoken.Claims;
@@ -13,6 +15,9 @@ import java.util.Map;
 
 @Component
 public class JwtUtil {
+
+    @Autowired
+    private RedisService redisService;
 
     @Value("${jwt.secret.key}")
     private String SECRET_KEY;
@@ -67,7 +72,7 @@ public class JwtUtil {
 
 
     public String generateRefreshToken( String username) {
-        return Jwts.builder()
+        String refreshToken = Jwts.builder()
                 .subject(username)
                 .header().empty().add("typ","refresh")
                 .and()
@@ -75,6 +80,8 @@ public class JwtUtil {
                 .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24)) // 24 hours expiration time
                 .signWith(getSigningKey())
                 .compact();
+        redisService.saveRefreshToken(username,refreshToken, 1000L * 60 * 60 * 24);
+        return refreshToken;
     }
 
     /**
@@ -94,7 +101,7 @@ public class JwtUtil {
 
 
     public String returnAccessToken(String token) {
-        if (validateToken(token)) {
+        if (validateToken(token) && redisService.validateRefreshToken(getUserNameFromToken(token), token)) {
             String username = getUserNameFromToken(token);
             return generateToken(username);
         }
