@@ -29,6 +29,7 @@ public class RedisService {
     private RedisTemplate<String,JournalEntryDTO> journalEntryDTORedisTemplate;
 
     @Autowired
+    @Qualifier("refreshTokenRedisTemplate")
     private RedisTemplate<String, String> redisTemplate;
 
 //    public <T> T get(String key, Class<T> entityClass) {

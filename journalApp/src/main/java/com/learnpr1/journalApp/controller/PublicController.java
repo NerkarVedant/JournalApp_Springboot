@@ -53,11 +53,16 @@ public class PublicController {
     @PostMapping("/login")            //localhost:8080/journal --Post--
     public ResponseEntity<?> login(@RequestBody User user){
         try {
+            log.info("Entered login method for user: {}", user.getUsername());
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));
+            log.info("Authentication successful for user: {}", user.getUsername());
             UserDetails userDetails=userServiceDetail.loadUserByUsername(user.getUsername());
+            log.info("UserDetails loaded for user: {}", userDetails.getUsername());
             String username = userDetails.getUsername();
+            log.info("Generating JWT token for user: {}", username);
             String jwt=jwtUtil.generateToken(username);
+            log.info("Second last step");
             String refreshToken=jwtUtil.generateRefreshToken(username);
 
             AuthResponseDTO authResponse = new AuthResponseDTO(jwt, refreshToken);

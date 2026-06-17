@@ -85,7 +85,7 @@ public class ExternalApiService {
         String currentWeater="";
         if (weatherResponse != null ) {
             currentWeater = " Temperature: " + weatherResponse.getCurrent().getTemperature() + "°C, " +
-                            "\n Feels like: " + weatherResponse.getCurrent().getWeather_descriptions().getFirst()+
+                            "\n Feels like: " + weatherResponse.getCurrent().getWeather_descriptions().get(0)+
                             "\n Sunrise: " + weatherResponse.getCurrent().getAstro().getSunrise() +
                             "\n Sunset: " + weatherResponse.getCurrent().getAstro().getSunset() +
                             "\n Air Quality CO: " + weatherResponse.getCurrent().getAir_quality().getCo() +

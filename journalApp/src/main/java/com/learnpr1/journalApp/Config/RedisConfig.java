@@ -126,6 +126,18 @@ public class RedisConfig {
         return template;
     }
 
+    @Bean(name = "refreshTokenRedisTemplate")
+    public RedisTemplate<String, String> refreshTokenRedisTemplate(LettuceConnectionFactory connectionFactory) {
+        RedisTemplate<String, String> template = new RedisTemplate<>();
+        template.setConnectionFactory(connectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(new StringRedisSerializer());
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashValueSerializer(new StringRedisSerializer());
+        template.afterPropertiesSet();
+        return template;
+    }
+
 //    The selected code configures Redis connectivity for a Spring Boot application using the Lettuce client. Here's what each part does:
 //
 //

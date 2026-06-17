@@ -20,7 +20,7 @@ export interface DashboardData {
   providedIn: 'root'
 })
 export class JournalService {
-  private baseUrl: string = 'http://localhost:8080';
+  private baseUrl: string = 'http://52.90.73.110:8080';
   private tokenKey: string = 'authToken';
 
   constructor(private http: HttpClient) { }
